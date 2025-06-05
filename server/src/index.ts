@@ -10,7 +10,8 @@ import {
   createLeadInputSchema, 
   searchLocationsInputSchema, 
   updateLeadStatusInputSchema,
-  createLocationInputSchema 
+  createLocationInputSchema,
+  createSubscriptionInputSchema 
 } from './schema';
 
 import { createLead } from './handlers/create_lead';
@@ -22,6 +23,7 @@ import { createLocation } from './handlers/create_location';
 import { getProductFeatures } from './handlers/get_product_features';
 import { getBusinessSolutions } from './handlers/get_business_solutions';
 import { getContentPage } from './handlers/get_content_page';
+import { createSubscription } from './handlers/create_subscription';
 
 const t = initTRPC.create({
   transformer: superjson,
@@ -69,6 +71,11 @@ const appRouter = router({
   getContentPage: publicProcedure
     .input(z.string())
     .query(({ input }) => getContentPage(input)),
+
+  // Subscription management
+  createSubscription: publicProcedure
+    .input(createSubscriptionInputSchema)
+    .mutation(({ input }) => createSubscription(input)),
 });
 
 export type AppRouter = typeof appRouter;

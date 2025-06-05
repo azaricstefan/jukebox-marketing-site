@@ -133,3 +133,19 @@ export const updateLeadStatusInputSchema = z.object({
 });
 
 export type UpdateLeadStatusInput = z.infer<typeof updateLeadStatusInputSchema>;
+
+// Subscription schema
+export const subscriptionSchema = z.object({
+  id: z.number(),
+  email: z.string().email(),
+  created_at: z.coerce.date()
+});
+
+export type Subscription = z.infer<typeof subscriptionSchema>;
+
+// Input schema for creating subscriptions
+export const createSubscriptionInputSchema = z.object({
+  email: z.string().email('Valid email is required')
+});
+
+export type CreateSubscriptionInput = z.infer<typeof createSubscriptionInputSchema>;

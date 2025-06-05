@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,7 +11,8 @@ import type {
   BusinessSolution, 
   Location, 
   CreateLeadInput,
-  SearchLocationsInput 
+  SearchLocationsInput,
+  CreateSubscriptionInput 
 } from '../../server/src/schema';
 
 function App() {
@@ -20,6 +20,7 @@ function App() {
   const [solutions, setSolutions] = useState<BusinessSolution[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubscribing, setIsSubscribing] = useState(false);
   const [activeSection, setActiveSection] = useState('hero');
 
   // Contact form state
@@ -41,6 +42,9 @@ function App() {
     business_type: '',
     limit: 50
   });
+
+  // Subscription form state
+  const [subscriptionEmail, setSubscriptionEmail] = useState('');
 
   const loadData = useCallback(async () => {
     try {
@@ -75,10 +79,10 @@ function App() {
         message: '',
         lead_type: 'general'
       });
-      alert('Thank you! We\'ll be in touch soon.');
+      alert('Hvala vam! Uskoro ćemo vas kontaktirati.');
     } catch (error) {
       console.error('Failed to submit contact form:', error);
-      alert('Something went wrong. Please try again.');
+      alert('Nešto je pošlo naopako. Molimo pokušajte ponovo.');
     } finally {
       setIsLoading(false);
     }
@@ -90,6 +94,26 @@ function App() {
       setLocations(searchResults);
     } catch (error) {
       console.error('Failed to search locations:', error);
+    }
+  };
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subscriptionEmail) return;
+
+    setIsSubscribing(true);
+    try {
+      const subscriptionInput: CreateSubscriptionInput = {
+        email: subscriptionEmail
+      };
+      await trpc.createSubscription.mutate(subscriptionInput);
+      setSubscriptionEmail('');
+      alert('Hvala na pretplati! Bićete obavešteni o novostima.');
+    } catch (error) {
+      console.error('Failed to subscribe:', error);
+      alert('Došlo je do greške prilikom pretplate. Molimo pokušajte ponovo.');
+    } finally {
+      setIsSubscribing(false);
     }
   };
 
@@ -112,12 +136,12 @@ function App() {
             </div>
             <div className="hidden md:flex space-x-6">
               {[
-                { id: 'hero', label: 'Home' },
-                { id: 'features', label: 'Features' },
-                { id: 'how-it-works', label: 'How It Works' },
-                { id: 'solutions', label: 'Solutions' },
-                { id: 'locations', label: 'Locations' },
-                { id: 'contact', label: 'Contact' }
+                { id: 'hero', label: 'Početna' },
+                { id: 'features', label: 'Funkcije' },
+                { id: 'how-it-works', label: 'Kako Funkcioniše' },
+                { id: 'solutions', label: 'Rešenja' },
+                { id: 'locations', label: 'Lokacije' },
+                { id: 'contact', label: 'Kontakt' }
               ].map((item) => (
                 <button
                   key={item.id}
@@ -136,7 +160,7 @@ function App() {
               onClick={() => scrollToSection('contact')}
               className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
             >
-              Get Started
+              Započnite
             </Button>
           </div>
         </div>
@@ -147,14 +171,14 @@ function App() {
         <div className="container mx-auto text-center">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-6xl md:text-7xl font-bold text-white mb-6 leading-tight">
-              The Future of
+              Budućnost
               <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                {" "}Music Entertainment
+                {" "}Muzičke Zabave
               </span>
             </h1>
             <p className="text-xl text-white/80 mb-8 leading-relaxed">
-              Transform your venue with our next-generation digital jukebox. 
-              Seamless streaming, social features, and unmatched audio quality.
+              Pretvorite vaše mesto sa našim digitalnim džuboksom nove generacije. 
+              Besprekorno strimovanje, društvene funkcije i neprevaziđen kvalitet zvuka.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
@@ -162,7 +186,7 @@ function App() {
                 onClick={() => scrollToSection('features')}
                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-lg px-8"
               >
-                Explore Features ✨
+                Istražite Funkcije ✨
               </Button>
               <Button 
                 size="lg"
@@ -170,7 +194,7 @@ function App() {
                 onClick={() => scrollToSection('contact')}
                 className="border-white/30 text-white hover:bg-white/10 text-lg px-8"
               >
-                Request Demo 🎯
+                Zatražite Demo 🎯
               </Button>
             </div>
           </div>
@@ -182,10 +206,10 @@ function App() {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-white mb-4">
-              Why Choose JukeBox Pro? 🚀
+              Zašto odabrati JukeBox Pro? 🚀
             </h2>
             <p className="text-xl text-white/70 max-w-2xl mx-auto">
-              Cutting-edge technology meets incredible user experience
+              Vrhunska tehnologija susreće neverovatno korisničko iskustvo
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -213,30 +237,30 @@ function App() {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-white mb-4">
-              How It Works ⚡
+              Kako Funkcioniše ⚡
             </h2>
             <p className="text-xl text-white/70 max-w-2xl mx-auto">
-              Simple setup, powerful results in just three steps
+              Jednostavno postavljanje, moćni rezultati u samo tri koraka
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
                 step: '01',
-                title: 'Easy Installation',
-                description: 'Our team handles complete setup and integration with your existing sound system.',
+                title: 'Laka Instalacija',
+                description: 'Naš tim obavlja kompletnu instalaciju i integraciju sa vašim postojećim zvučnim sistemom.',
                 icon: '🔧'
               },
               {
                 step: '02',
-                title: 'Customer Engagement',
-                description: 'Patrons use our mobile app or touchscreen to select and queue their favorite songs.',
+                title: 'Angažovanje Kupaca',
+                description: 'Posetioci koriste našu mobilnu aplikaciju ili ekran osetljiv na dodir za odabir i redosled omiljenih pesama.',
                 icon: '📱'
               },
               {
                 step: '03',
-                title: 'Revenue Growth',
-                description: 'Watch your music revenue increase while customer satisfaction soars.',
+                title: 'Rast Prihoda',
+                description: 'Gledajte kako vaš muzički prihod raste dok zadovoljstvo kupaca dostiže vrhunac.',
                 icon: '📈'
               }
             ].map((item, index) => (
@@ -245,7 +269,7 @@ function App() {
                   <span className="text-3xl">{item.icon}</span>
                 </div>
                 <div className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent font-bold text-lg mb-2">
-                  STEP {item.step}
+                  KORAK {item.step}
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4">{item.title}</h3>
                 <p className="text-white/70 leading-relaxed">{item.description}</p>
@@ -260,10 +284,10 @@ function App() {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-white mb-4">
-              Business Solutions 💼
+              Poslovna Rešenja 💼
             </h2>
             <p className="text-xl text-white/70 max-w-2xl mx-auto">
-              Tailored packages for every type of venue
+              Prilagođeni paketi za svaki tip lokala
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-8">
@@ -274,7 +298,7 @@ function App() {
                     <CardTitle className="text-white text-2xl">{solution.title}</CardTitle>
                     {solution.is_featured && (
                       <Badge className="bg-gradient-to-r from-purple-500 to-pink-500">
-                        Most Popular 🔥
+                        Najpopularnije 🔥
                       </Badge>
                     )}
                   </div>
@@ -284,11 +308,11 @@ function App() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <h4 className="text-white font-semibold mb-2">Key Benefits:</h4>
+                    <h4 className="text-white font-semibold mb-2">Ključne Prednosti:</h4>
                     <p className="text-white/70 text-sm">{solution.benefits}</p>
                   </div>
                   <div>
-                    <h4 className="text-white font-semibold mb-2">Perfect For:</h4>
+                    <h4 className="text-white font-semibold mb-2">Savršeno Za:</h4>
                     <p className="text-white/70 text-sm">{solution.target_audience}</p>
                   </div>
                   {solution.pricing_info && (
@@ -308,22 +332,22 @@ function App() {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-white mb-4">
-              Find JukeBox Pro Near You 📍
+              Pronađite JukeBox Pro u vašoj blizini 📍
             </h2>
             <p className="text-xl text-white/70 max-w-2xl mx-auto">
-              Experience our jukebox at these amazing venues
+              Iskusite naš džuboks na ovim neverovatnim lokacijama
             </p>
           </div>
           
           {/* Location Search */}
           <Card className="bg-white/5 border-white/10 backdrop-blur-sm mb-12 max-w-4xl mx-auto">
             <CardHeader>
-              <CardTitle className="text-white text-center">Search Locations 🔍</CardTitle>
+              <CardTitle className="text-white text-center">Pretraga Lokacija 🔍</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-4 gap-4 mb-4">
                 <Input
-                  placeholder="City"
+                  placeholder="Grad"
                   value={locationSearch.city || ''}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setLocationSearch((prev: SearchLocationsInput) => ({ ...prev, city: e.target.value || undefined }))
@@ -331,7 +355,7 @@ function App() {
                   className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                 />
                 <Input
-                  placeholder="State"
+                  placeholder="Država"
                   value={locationSearch.state || ''}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setLocationSearch((prev: SearchLocationsInput) => ({ ...prev, state: e.target.value || undefined }))
@@ -339,7 +363,7 @@ function App() {
                   className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                 />
                 <Input
-                  placeholder="ZIP Code"
+                  placeholder="Poštanski Broj"
                   value={locationSearch.zip_code || ''}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setLocationSearch((prev: SearchLocationsInput) => ({ ...prev, zip_code: e.target.value || undefined }))
@@ -350,7 +374,7 @@ function App() {
                   onClick={handleLocationSearch}
                   className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
                 >
-                  Search 🔍
+                  Pretraži 🔍
                 </Button>
               </div>
             </CardContent>
@@ -388,24 +412,24 @@ function App() {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-white mb-4">
-              Ready to Get Started? 🚀
+              Spremni da počnete? 🚀
             </h2>
             <p className="text-xl text-white/70 max-w-2xl mx-auto">
-              Contact us today for a free consultation and demo
+              Kontaktirajte nas danas za besplatne konsultacije i demo
             </p>
           </div>
           
           <div className="max-w-2xl mx-auto">
             <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="text-white text-center text-2xl">Contact Us 📧</CardTitle>
+                <CardTitle className="text-white text-center text-2xl">Kontaktirajte nas 📧</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleContactSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <Input
-                        placeholder="First Name *"
+                        placeholder="Ime *"
                         value={contactForm.first_name}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           setContactForm((prev: CreateLeadInput) => ({ ...prev, first_name: e.target.value }))
@@ -416,7 +440,7 @@ function App() {
                     </div>
                     <div>
                       <Input
-                        placeholder="Last Name *"
+                        placeholder="Prezime *"
                         value={contactForm.last_name}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           setContactForm((prev: CreateLeadInput) => ({ ...prev, last_name: e.target.value }))
@@ -431,7 +455,7 @@ function App() {
                     <div>
                       <Input
                         type="email"
-                        placeholder="Email Address *"
+                        placeholder="E-mail Adresa *"
                         value={contactForm.email}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           setContactForm((prev: CreateLeadInput) => ({ ...prev, email: e.target.value }))
@@ -443,7 +467,7 @@ function App() {
                     <div>
                       <Input
                         type="tel"
-                        placeholder="Phone Number"
+                        placeholder="Broj Telefona"
                         value={contactForm.phone || ''}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           setContactForm((prev: CreateLeadInput) => ({ 
@@ -457,7 +481,7 @@ function App() {
                   </div>
 
                   <Input
-                    placeholder="Company/Venue Name"
+                    placeholder="Naziv Kompanije/Lokala"
                     value={contactForm.company || ''}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setContactForm((prev: CreateLeadInput) => ({ 
@@ -475,17 +499,17 @@ function App() {
                     }
                   >
                     <SelectTrigger className="bg-white/10 border-white/20 text-white">
-                      <SelectValue placeholder="Inquiry Type" />
+                      <SelectValue placeholder="Vrsta Upita" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="general">General Information 💬</SelectItem>
-                      <SelectItem value="business">Business Partnership 🤝</SelectItem>
-                      <SelectItem value="location">New Location 📍</SelectItem>
+                      <SelectItem value="general">Opšte Informacije 💬</SelectItem>
+                      <SelectItem value="business">Poslovna Saradnja 🤝</SelectItem>
+                      <SelectItem value="location">Nova Lokacija 📍</SelectItem>
                     </SelectContent>
                   </Select>
 
                   <Textarea
-                    placeholder="Tell us more about your venue and requirements *"
+                    placeholder="Recite nam više o vašem lokalu i zahtevima *"
                     value={contactForm.message}
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                       setContactForm((prev: CreateLeadInput) => ({ ...prev, message: e.target.value }))
@@ -500,7 +524,46 @@ function App() {
                     disabled={isLoading}
                     className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-lg py-6"
                   >
-                    {isLoading ? 'Sending...' : 'Send Message 🚀'}
+                    {isLoading ? 'Šaljem...' : 'Pošalji Poruku 🚀'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter Subscription Section */}
+      <section id="newsletter" className="py-20 px-6">
+        <div className="container mx-auto">
+          <div className="max-w-3xl mx-auto text-center">
+            <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-white text-3xl mb-4">
+                  Pretplatite se na novosti 📩
+                </CardTitle>
+                <CardDescription className="text-white/70 text-lg">
+                  Budite prvi koji će saznati o našim novim funkcijama i specijalnim ponudama!
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+                  <Input
+                    type="email"
+                    placeholder="Vaša e-mail adresa"
+                    value={subscriptionEmail}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setSubscriptionEmail(e.target.value)
+                    }
+                    required
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50 flex-1"
+                  />
+                  <Button 
+                    type="submit" 
+                    disabled={isSubscribing || !subscriptionEmail}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 px-6"
+                  >
+                    {isSubscribing ? 'Pretplaćujem...' : 'Pretplati se'}
                   </Button>
                 </form>
               </CardContent>
@@ -520,7 +583,7 @@ function App() {
               <span className="text-white font-bold text-xl">JukeBox Pro</span>
             </div>
             <p className="text-white/60 text-center md:text-right">
-              © 2024 JukeBox Pro. Transforming venues worldwide. 🌟
+              © 2024 JukeBox Pro. Transformišemo lokale širom sveta. ✨
             </p>
           </div>
         </div>

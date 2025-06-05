@@ -79,6 +79,13 @@ export const contentPagesTable = pgTable('content_pages', {
   updated_at: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// Subscriptions table
+export const subscriptionsTable = pgTable('subscriptions', {
+  id: serial('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+});
+
 // Export all tables for relation queries
 export const tables = {
   leads: leadsTable,
@@ -86,4 +93,5 @@ export const tables = {
   productFeatures: productFeaturesTable,
   businessSolutions: businessSolutionsTable,
   contentPages: contentPagesTable,
+  subscriptions: subscriptionsTable,
 };
