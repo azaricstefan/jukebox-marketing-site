@@ -7,15 +7,26 @@ import { type CreateLeadInput } from '../schema';
 import { createLead } from '../handlers/create_lead';
 import { eq } from 'drizzle-orm';
 
-// Test input with all required fields
+// Simple test input
 const testInput: CreateLeadInput = {
   first_name: 'John',
   last_name: 'Doe',
   email: 'john.doe@example.com',
   phone: '+1-555-123-4567',
-  company: 'Test Company Inc',
+  company: 'Test Company',
   message: 'I am interested in your services',
   lead_type: 'business'
+};
+
+// Test input with nullable fields
+const minimalInput: CreateLeadInput = {
+  first_name: 'Jane',
+  last_name: 'Smith',
+  email: 'jane.smith@example.com',
+  phone: null,
+  company: null,
+  message: 'General inquiry',
+  lead_type: 'general'
 };
 
 describe('createLead', () => {
@@ -30,7 +41,7 @@ describe('createLead', () => {
     expect(result.last_name).toEqual('Doe');
     expect(result.email).toEqual('john.doe@example.com');
     expect(result.phone).toEqual('+1-555-123-4567');
-    expect(result.company).toEqual('Test Company Inc');
+    expect(result.company).toEqual('Test Company');
     expect(result.message).toEqual('I am interested in your services');
     expect(result.lead_type).toEqual('business');
     expect(result.status).toEqual('new'); // Default status
@@ -39,27 +50,18 @@ describe('createLead', () => {
     expect(result.updated_at).toBeInstanceOf(Date);
   });
 
-  it('should create a lead with nullable fields set to null', async () => {
-    const inputWithNulls: CreateLeadInput = {
-      first_name: 'Jane',
-      last_name: 'Smith',
-      email: 'jane.smith@example.com',
-      phone: null,
-      company: null,
-      message: 'Looking for general information',
-      lead_type: 'general'
-    };
-
-    const result = await createLead(inputWithNulls);
+  it('should create a lead with minimal fields', async () => {
+    const result = await createLead(minimalInput);
 
     expect(result.first_name).toEqual('Jane');
     expect(result.last_name).toEqual('Smith');
     expect(result.email).toEqual('jane.smith@example.com');
     expect(result.phone).toBeNull();
     expect(result.company).toBeNull();
-    expect(result.message).toEqual('Looking for general information');
+    expect(result.message).toEqual('General inquiry');
     expect(result.lead_type).toEqual('general');
     expect(result.status).toEqual('new');
+    expect(result.id).toBeDefined();
   });
 
   it('should save lead to database', async () => {
@@ -76,7 +78,7 @@ describe('createLead', () => {
     expect(leads[0].last_name).toEqual('Doe');
     expect(leads[0].email).toEqual('john.doe@example.com');
     expect(leads[0].phone).toEqual('+1-555-123-4567');
-    expect(leads[0].company).toEqual('Test Company Inc');
+    expect(leads[0].company).toEqual('Test Company');
     expect(leads[0].message).toEqual('I am interested in your services');
     expect(leads[0].lead_type).toEqual('business');
     expect(leads[0].status).toEqual('new');
@@ -84,29 +86,36 @@ describe('createLead', () => {
     expect(leads[0].updated_at).toBeInstanceOf(Date);
   });
 
-  it('should create leads with different lead types', async () => {
-    const generalLead: CreateLeadInput = {
+  it('should create multiple leads with different lead types', async () => {
+    const businessLead = await createLead({
       ...testInput,
-      lead_type: 'general',
-      message: 'General inquiry'
-    };
+      lead_type: 'business'
+    });
 
-    const locationLead: CreateLeadInput = {
-      ...testInput,
-      lead_type: 'location',
-      message: 'Location-specific inquiry'
-    };
+    const generalLead = await createLead({
+      ...minimalInput,
+      lead_type: 'general'
+    });
 
-    const result1 = await createLead(generalLead);
-    const result2 = await createLead(locationLead);
+    const locationLead = await createLead({
+      first_name: 'Bob',
+      last_name: 'Wilson',
+      email: 'bob@example.com',
+      phone: null,
+      company: null,
+      message: 'Location inquiry',
+      lead_type: 'location'
+    });
 
-    expect(result1.lead_type).toEqual('general');
-    expect(result1.message).toEqual('General inquiry');
-    expect(result2.lead_type).toEqual('location');
-    expect(result2.message).toEqual('Location-specific inquiry');
+    expect(businessLead.lead_type).toEqual('business');
+    expect(generalLead.lead_type).toEqual('general');
+    expect(locationLead.lead_type).toEqual('location');
 
-    // Verify both records exist in database
-    const allLeads = await db.select().from(leadsTable).execute();
-    expect(allLeads).toHaveLength(2);
+    // Verify all leads are saved
+    const allLeads = await db.select()
+      .from(leadsTable)
+      .execute();
+
+    expect(allLeads).toHaveLength(3);
   });
 });

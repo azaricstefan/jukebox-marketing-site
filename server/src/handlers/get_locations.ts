@@ -11,8 +11,8 @@ export const getLocations = async (): Promise<Location[]> => {
 
     return results.map(location => ({
       ...location,
-      latitude: location.latitude !== null ? location.latitude : null,
-      longitude: location.longitude !== null ? location.longitude : null
+      latitude: location.latitude !== null ? parseFloat(location.latitude.toString()) : null,
+      longitude: location.longitude !== null ? parseFloat(location.longitude.toString()) : null
     }));
   } catch (error) {
     console.error('Failed to get locations:', error);

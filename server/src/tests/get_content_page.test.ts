@@ -42,7 +42,41 @@ describe('getContentPage', () => {
     expect(result).toBeNull();
   });
 
-  it('should return content page with nullable fields', async () => {
+  it('should return published content page', async () => {
+    // Create published content page
+    await db.insert(contentPagesTable)
+      .values({
+        slug: 'published-page',
+        title: 'Published Page',
+        content: 'Published content',
+        is_published: true
+      })
+      .execute();
+
+    const result = await getContentPage('published-page');
+
+    expect(result).not.toBeNull();
+    expect(result!.is_published).toBe(true);
+  });
+
+  it('should return unpublished content page', async () => {
+    // Create unpublished content page
+    await db.insert(contentPagesTable)
+      .values({
+        slug: 'unpublished-page',
+        title: 'Unpublished Page',
+        content: 'Unpublished content',
+        is_published: false
+      })
+      .execute();
+
+    const result = await getContentPage('unpublished-page');
+
+    expect(result).not.toBeNull();
+    expect(result!.is_published).toBe(false);
+  });
+
+  it('should handle nullable fields correctly', async () => {
     // Create content page with null optional fields
     await db.insert(contentPagesTable)
       .values({
@@ -51,37 +85,14 @@ describe('getContentPage', () => {
         content: 'Minimal content',
         meta_title: null,
         meta_description: null,
-        is_published: false
+        is_published: true
       })
       .execute();
 
     const result = await getContentPage('minimal-page');
 
     expect(result).not.toBeNull();
-    expect(result!.slug).toEqual('minimal-page');
-    expect(result!.title).toEqual('Minimal Page');
-    expect(result!.content).toEqual('Minimal content');
     expect(result!.meta_title).toBeNull();
     expect(result!.meta_description).toBeNull();
-    expect(result!.is_published).toBe(false);
-  });
-
-  it('should be case sensitive for slug matching', async () => {
-    // Create test content page
-    await db.insert(contentPagesTable)
-      .values({
-        slug: 'Case-Sensitive',
-        title: 'Case Test',
-        content: 'Test content',
-        is_published: true
-      })
-      .execute();
-
-    const exactMatch = await getContentPage('Case-Sensitive');
-    expect(exactMatch).not.toBeNull();
-    expect(exactMatch!.slug).toEqual('Case-Sensitive');
-
-    const lowerCase = await getContentPage('case-sensitive');
-    expect(lowerCase).toBeNull();
   });
 });

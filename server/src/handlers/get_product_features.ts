@@ -6,6 +6,7 @@ import { eq, asc } from 'drizzle-orm';
 
 export const getProductFeatures = async (): Promise<ProductFeature[]> => {
   try {
+    // Get all active product features ordered by order_index
     const results = await db.select()
       .from(productFeaturesTable)
       .where(eq(productFeaturesTable.is_active, true))

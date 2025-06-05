@@ -16,8 +16,9 @@ export const updateLeadStatus = async (input: UpdateLeadStatusInput): Promise<Le
       .returning()
       .execute();
 
+    // Check if lead was found and updated
     if (result.length === 0) {
-      throw new Error(`Lead with id ${input.id} not found`);
+      throw new Error(`Lead with ID ${input.id} not found`);
     }
 
     return result[0];

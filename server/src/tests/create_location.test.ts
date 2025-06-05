@@ -7,14 +7,14 @@ import { type CreateLocationInput } from '../schema';
 import { createLocation } from '../handlers/create_location';
 import { eq } from 'drizzle-orm';
 
-// Test input with all required fields
+// Complete test input with all required fields
 const testInput: CreateLocationInput = {
   name: 'Test Restaurant',
   address: '123 Main St',
-  city: 'Anytown',
+  city: 'San Francisco',
   state: 'CA',
-  zip_code: '12345',
-  phone: '555-123-4567',
+  zip_code: '94102',
+  phone: '(555) 123-4567',
   email: 'test@restaurant.com',
   website: 'https://testrestaurant.com',
   business_type: 'restaurant',
@@ -32,10 +32,10 @@ describe('createLocation', () => {
     // Basic field validation
     expect(result.name).toEqual('Test Restaurant');
     expect(result.address).toEqual('123 Main St');
-    expect(result.city).toEqual('Anytown');
+    expect(result.city).toEqual('San Francisco');
     expect(result.state).toEqual('CA');
-    expect(result.zip_code).toEqual('12345');
-    expect(result.phone).toEqual('555-123-4567');
+    expect(result.zip_code).toEqual('94102');
+    expect(result.phone).toEqual('(555) 123-4567');
     expect(result.email).toEqual('test@restaurant.com');
     expect(result.website).toEqual('https://testrestaurant.com');
     expect(result.business_type).toEqual('restaurant');
@@ -51,9 +51,9 @@ describe('createLocation', () => {
     const minimalInput: CreateLocationInput = {
       name: 'Minimal Location',
       address: '456 Oak Ave',
-      city: 'Somewhere',
-      state: 'NY',
-      zip_code: '67890',
+      city: 'Los Angeles',
+      state: 'CA',
+      zip_code: '90210',
       phone: null,
       email: null,
       website: null,
@@ -76,7 +76,7 @@ describe('createLocation', () => {
   it('should save location to database', async () => {
     const result = await createLocation(testInput);
 
-    // Query database to verify record was saved
+    // Query using proper drizzle syntax
     const locations = await db.select()
       .from(locationsTable)
       .where(eq(locationsTable.id, result.id))
@@ -86,9 +86,9 @@ describe('createLocation', () => {
     const savedLocation = locations[0];
     expect(savedLocation.name).toEqual('Test Restaurant');
     expect(savedLocation.address).toEqual('123 Main St');
-    expect(savedLocation.city).toEqual('Anytown');
+    expect(savedLocation.city).toEqual('San Francisco');
     expect(savedLocation.state).toEqual('CA');
-    expect(savedLocation.zip_code).toEqual('12345');
+    expect(savedLocation.zip_code).toEqual('94102');
     expect(savedLocation.business_type).toEqual('restaurant');
     expect(savedLocation.is_active).toBe(true);
     expect(savedLocation.created_at).toBeInstanceOf(Date);
@@ -96,24 +96,24 @@ describe('createLocation', () => {
   });
 
   it('should handle coordinates correctly', async () => {
-    const locationWithCoords: CreateLocationInput = {
+    const coordinateInput: CreateLocationInput = {
       name: 'GPS Location',
       address: '789 Pine St',
-      city: 'Coordinated',
-      state: 'TX',
-      zip_code: '54321',
+      city: 'Seattle',
+      state: 'WA',
+      zip_code: '98101',
       phone: null,
       email: null,
       website: null,
       business_type: 'office',
-      latitude: 29.7604,
-      longitude: -95.3698
+      latitude: 47.6062,
+      longitude: -122.3321
     };
 
-    const result = await createLocation(locationWithCoords);
+    const result = await createLocation(coordinateInput);
 
-    expect(result.latitude).toEqual(29.7604);
-    expect(result.longitude).toEqual(-95.3698);
+    expect(result.latitude).toEqual(47.6062);
+    expect(result.longitude).toEqual(-122.3321);
     expect(typeof result.latitude).toBe('number');
     expect(typeof result.longitude).toBe('number');
   });

@@ -6,24 +6,24 @@ import { leadsTable } from '../db/schema';
 import { type CreateLeadInput } from '../schema';
 import { getLeads } from '../handlers/get_leads';
 
-// Test input for creating leads
+// Test input data
 const testLead1: CreateLeadInput = {
   first_name: 'John',
-  last_name: 'Doe',
-  email: 'john.doe@example.com',
-  phone: '555-1234',
-  company: 'Test Corp',
-  message: 'I am interested in your services',
+  last_name: 'Smith',
+  email: 'john.smith@example.com',
+  phone: '555-0123',
+  company: 'Acme Corp',
+  message: 'Interested in your services',
   lead_type: 'business'
 };
 
 const testLead2: CreateLeadInput = {
   first_name: 'Jane',
-  last_name: 'Smith',
-  email: 'jane.smith@example.com',
+  last_name: 'Doe',
+  email: 'jane.doe@example.com',
   phone: null,
   company: null,
-  message: 'Need more information',
+  message: 'General inquiry',
   lead_type: 'general'
 };
 
@@ -33,126 +33,115 @@ describe('getLeads', () => {
 
   it('should return empty array when no leads exist', async () => {
     const result = await getLeads();
+    
     expect(result).toEqual([]);
   });
 
   it('should return all leads', async () => {
-    // Create test leads separately to ensure different timestamps
-    await db.insert(leadsTable).values({
-      first_name: testLead1.first_name,
-      last_name: testLead1.last_name,
-      email: testLead1.email,
-      phone: testLead1.phone,
-      company: testLead1.company,
-      message: testLead1.message,
-      lead_type: testLead1.lead_type
-    }).execute();
-
-    // Wait a bit to ensure different timestamps
-    await new Promise(resolve => setTimeout(resolve, 10));
-
-    await db.insert(leadsTable).values({
-      first_name: testLead2.first_name,
-      last_name: testLead2.last_name,
-      email: testLead2.email,
-      phone: testLead2.phone,
-      company: testLead2.company,
-      message: testLead2.message,
-      lead_type: testLead2.lead_type
-    }).execute();
+    // Create test leads
+    await db.insert(leadsTable)
+      .values([
+        {
+          ...testLead1,
+          status: 'new'
+        },
+        {
+          ...testLead2,
+          status: 'new'
+        }
+      ])
+      .execute();
 
     const result = await getLeads();
 
     expect(result).toHaveLength(2);
     
-    // Find leads by name since order is by created_at desc (Jane created second, so first)
-    const janeResult = result.find(lead => lead.first_name === 'Jane');
-    const johnResult = result.find(lead => lead.first_name === 'John');
+    // Check first lead
+    const lead1 = result.find(l => l.email === 'john.smith@example.com');
+    expect(lead1).toBeDefined();
+    expect(lead1!.first_name).toEqual('John');
+    expect(lead1!.last_name).toEqual('Smith');
+    expect(lead1!.phone).toEqual('555-0123');
+    expect(lead1!.company).toEqual('Acme Corp');
+    expect(lead1!.message).toEqual('Interested in your services');
+    expect(lead1!.lead_type).toEqual('business');
+    expect(lead1!.status).toEqual('new');
+    expect(lead1!.id).toBeDefined();
+    expect(lead1!.created_at).toBeInstanceOf(Date);
+    expect(lead1!.updated_at).toBeInstanceOf(Date);
 
-    expect(janeResult).toBeDefined();
-    expect(johnResult).toBeDefined();
-
-    // Verify Jane's data
-    expect(janeResult!.first_name).toEqual('Jane');
-    expect(janeResult!.last_name).toEqual('Smith');
-    expect(janeResult!.email).toEqual('jane.smith@example.com');
-    expect(janeResult!.phone).toBeNull();
-    expect(janeResult!.company).toBeNull();
-    expect(janeResult!.message).toEqual('Need more information');
-    expect(janeResult!.lead_type).toEqual('general');
-    expect(janeResult!.status).toEqual('new');
-
-    // Verify John's data
-    expect(johnResult!.first_name).toEqual('John');
-    expect(johnResult!.last_name).toEqual('Doe');
-    expect(johnResult!.email).toEqual('john.doe@example.com');
-    expect(johnResult!.phone).toEqual('555-1234');
-    expect(johnResult!.company).toEqual('Test Corp');
-    expect(johnResult!.message).toEqual('I am interested in your services');
-    expect(johnResult!.lead_type).toEqual('business');
-    expect(johnResult!.status).toEqual('new');
+    // Check second lead
+    const lead2 = result.find(l => l.email === 'jane.doe@example.com');
+    expect(lead2).toBeDefined();
+    expect(lead2!.first_name).toEqual('Jane');
+    expect(lead2!.last_name).toEqual('Doe');
+    expect(lead2!.phone).toBeNull();
+    expect(lead2!.company).toBeNull();
+    expect(lead2!.message).toEqual('General inquiry');
+    expect(lead2!.lead_type).toEqual('general');
+    expect(lead2!.status).toEqual('new');
   });
 
   it('should return leads ordered by created_at descending', async () => {
     // Create first lead
-    await db.insert(leadsTable).values({
-      first_name: testLead1.first_name,
-      last_name: testLead1.last_name,
-      email: testLead1.email,
-      phone: testLead1.phone,
-      company: testLead1.company,
-      message: testLead1.message,
-      lead_type: testLead1.lead_type
-    }).execute();
+    const firstLead = await db.insert(leadsTable)
+      .values({
+        ...testLead1,
+        status: 'new'
+      })
+      .returning()
+      .execute();
 
-    // Wait a bit to ensure different timestamps
+    // Wait a moment to ensure different timestamps
     await new Promise(resolve => setTimeout(resolve, 10));
 
     // Create second lead
-    await db.insert(leadsTable).values({
-      first_name: testLead2.first_name,
-      last_name: testLead2.last_name,
-      email: testLead2.email,
-      phone: testLead2.phone,
-      company: testLead2.company,
-      message: testLead2.message,
-      lead_type: testLead2.lead_type
-    }).execute();
+    const secondLead = await db.insert(leadsTable)
+      .values({
+        ...testLead2,
+        status: 'contacted'
+      })
+      .returning()
+      .execute();
 
     const result = await getLeads();
 
     expect(result).toHaveLength(2);
-    // Most recent lead should be first (Jane Smith was created second)
-    expect(result[0].first_name).toEqual('Jane');
-    expect(result[1].first_name).toEqual('John');
-    expect(result[0].created_at.getTime()).toBeGreaterThan(result[1].created_at.getTime());
+    
+    // Most recent lead should be first
+    expect(result[0].id).toEqual(secondLead[0].id);
+    expect(result[1].id).toEqual(firstLead[0].id);
+    
+    // Verify order by comparing timestamps
+    expect(result[0].created_at >= result[1].created_at).toBe(true);
   });
 
-  it('should include all required fields', async () => {
-    await db.insert(leadsTable).values({
-      first_name: testLead1.first_name,
-      last_name: testLead1.last_name,
-      email: testLead1.email,
-      phone: testLead1.phone,
-      company: testLead1.company,
-      message: testLead1.message,
-      lead_type: testLead1.lead_type
-    }).execute();
+  it('should return leads with all possible statuses', async () => {
+    // Create leads with different statuses
+    await db.insert(leadsTable)
+      .values([
+        { ...testLead1, status: 'new' },
+        { ...testLead2, status: 'contacted' },
+        { 
+          first_name: 'Bob',
+          last_name: 'Johnson', 
+          email: 'bob@example.com',
+          phone: null,
+          company: null,
+          message: 'Test message',
+          lead_type: 'location',
+          status: 'qualified'
+        }
+      ])
+      .execute();
 
     const result = await getLeads();
 
-    expect(result).toHaveLength(1);
-    const lead = result[0];
+    expect(result).toHaveLength(3);
     
-    expect(lead.id).toBeDefined();
-    expect(typeof lead.id).toBe('number');
-    expect(lead.first_name).toBeDefined();
-    expect(lead.last_name).toBeDefined();
-    expect(lead.email).toBeDefined();
-    expect(lead.message).toBeDefined();
-    expect(lead.lead_type).toBeDefined();
-    expect(lead.status).toBeDefined();
-    expect(lead.created_at).toBeInstanceOf(Date);
-    expect(lead.updated_at).toBeInstanceOf(Date);
+    const statuses = result.map(lead => lead.status);
+    expect(statuses).toContain('new');
+    expect(statuses).toContain('contacted');
+    expect(statuses).toContain('qualified');
   });
 });

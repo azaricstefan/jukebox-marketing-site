@@ -15,13 +15,12 @@ export const createLead = async (input: CreateLeadInput): Promise<Lead> => {
         company: input.company,
         message: input.message,
         lead_type: input.lead_type,
-        status: 'new' // Default status from schema
+        status: 'new' // Default status for new leads
       })
       .returning()
       .execute();
 
-    const lead = result[0];
-    return lead;
+    return result[0];
   } catch (error) {
     console.error('Lead creation failed:', error);
     throw error;

@@ -9,7 +9,6 @@ export const getContentPage = async (slug: string): Promise<ContentPage | null> 
     const results = await db.select()
       .from(contentPagesTable)
       .where(eq(contentPagesTable.slug, slug))
-      .limit(1)
       .execute();
 
     if (results.length === 0) {

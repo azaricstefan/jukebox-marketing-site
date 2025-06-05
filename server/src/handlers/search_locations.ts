@@ -9,7 +9,9 @@ export const searchLocations = async (input: SearchLocationsInput): Promise<Loca
     // Build conditions array
     const conditions: SQL<unknown>[] = [];
 
-    // Add filters based on input
+    // Always filter for active locations
+    conditions.push(eq(locationsTable.is_active, true));
+
     if (input.city) {
       conditions.push(eq(locationsTable.city, input.city));
     }
@@ -26,30 +28,21 @@ export const searchLocations = async (input: SearchLocationsInput): Promise<Loca
       conditions.push(eq(locationsTable.business_type, input.business_type));
     }
 
-    // Only include active locations
-    conditions.push(eq(locationsTable.is_active, true));
+    // Execute query with all conditions at once
+    const results = await db.select()
+      .from(locationsTable)
+      .where(and(...conditions))
+      .limit(input.limit)
+      .execute();
 
-    // Execute query with conditions
-    const results = conditions.length === 1
-      ? await db.select()
-          .from(locationsTable)
-          .where(conditions[0])
-          .limit(input.limit)
-          .execute()
-      : await db.select()
-          .from(locationsTable)
-          .where(and(...conditions))
-          .limit(input.limit)
-          .execute();
-
+    // Convert numeric fields back to numbers
     return results.map(location => ({
       ...location,
-      // Convert real columns (latitude/longitude) to numbers if they exist
-      latitude: location.latitude !== null ? Number(location.latitude) : null,
-      longitude: location.longitude !== null ? Number(location.longitude) : null
+      latitude: location.latitude ? parseFloat(location.latitude.toString()) : null,
+      longitude: location.longitude ? parseFloat(location.longitude.toString()) : null
     }));
   } catch (error) {
-    console.error('Search locations failed:', error);
+    console.error('Location search failed:', error);
     throw error;
   }
 };

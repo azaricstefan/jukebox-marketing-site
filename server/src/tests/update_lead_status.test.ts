@@ -12,8 +12,8 @@ const testLeadInput: CreateLeadInput = {
   first_name: 'John',
   last_name: 'Doe',
   email: 'john.doe@example.com',
-  phone: '+1234567890',
-  company: 'Test Company',
+  phone: '555-1234',
+  company: 'Test Corp',
   message: 'Interested in your services',
   lead_type: 'business'
 };
@@ -24,7 +24,7 @@ describe('updateLeadStatus', () => {
 
   it('should update lead status successfully', async () => {
     // Create a test lead first
-    const createResult = await db.insert(leadsTable)
+    const createdLead = await db.insert(leadsTable)
       .values({
         ...testLeadInput,
         status: 'new'
@@ -32,9 +32,12 @@ describe('updateLeadStatus', () => {
       .returning()
       .execute();
 
-    const leadId = createResult[0].id;
+    const leadId = createdLead[0].id;
+    const originalUpdatedAt = createdLead[0].updated_at;
 
-    // Update the lead status
+    // Wait a moment to ensure timestamp difference
+    await new Promise(resolve => setTimeout(resolve, 10));
+
     const updateInput: UpdateLeadStatusInput = {
       id: leadId,
       status: 'contacted'
@@ -42,18 +45,19 @@ describe('updateLeadStatus', () => {
 
     const result = await updateLeadStatus(updateInput);
 
-    // Verify the updated lead
+    // Verify the status was updated
     expect(result.id).toEqual(leadId);
     expect(result.status).toEqual('contacted');
     expect(result.first_name).toEqual('John');
     expect(result.last_name).toEqual('Doe');
     expect(result.email).toEqual('john.doe@example.com');
     expect(result.updated_at).toBeInstanceOf(Date);
+    expect(result.updated_at > originalUpdatedAt).toBe(true);
   });
 
-  it('should update the database record correctly', async () => {
-    // Create a test lead first
-    const createResult = await db.insert(leadsTable)
+  it('should save updated status to database', async () => {
+    // Create a test lead
+    const createdLead = await db.insert(leadsTable)
       .values({
         ...testLeadInput,
         status: 'new'
@@ -61,13 +65,8 @@ describe('updateLeadStatus', () => {
       .returning()
       .execute();
 
-    const leadId = createResult[0].id;
-    const originalUpdatedAt = createResult[0].updated_at;
+    const leadId = createdLead[0].id;
 
-    // Wait a moment to ensure timestamp difference
-    await new Promise(resolve => setTimeout(resolve, 10));
-
-    // Update the lead status
     const updateInput: UpdateLeadStatusInput = {
       id: leadId,
       status: 'qualified'
@@ -75,21 +74,31 @@ describe('updateLeadStatus', () => {
 
     await updateLeadStatus(updateInput);
 
-    // Query the database to verify the update
-    const updatedLeads = await db.select()
+    // Verify the change was persisted
+    const updatedLead = await db.select()
       .from(leadsTable)
       .where(eq(leadsTable.id, leadId))
       .execute();
 
-    expect(updatedLeads).toHaveLength(1);
-    expect(updatedLeads[0].status).toEqual('qualified');
-    expect(updatedLeads[0].updated_at).toBeInstanceOf(Date);
-    expect(updatedLeads[0].updated_at > originalUpdatedAt).toBe(true);
+    expect(updatedLead).toHaveLength(1);
+    expect(updatedLead[0].status).toEqual('qualified');
+    expect(updatedLead[0].updated_at).toBeInstanceOf(Date);
   });
 
-  it('should handle different status values correctly', async () => {
-    // Create a test lead first
-    const createResult = await db.insert(leadsTable)
+  it('should throw error for non-existent lead', async () => {
+    const updateInput: UpdateLeadStatusInput = {
+      id: 99999,
+      status: 'contacted'
+    };
+
+    await expect(updateLeadStatus(updateInput))
+      .rejects
+      .toThrow(/Lead with ID 99999 not found/i);
+  });
+
+  it('should handle all valid status values', async () => {
+    // Create a test lead
+    const createdLead = await db.insert(leadsTable)
       .values({
         ...testLeadInput,
         status: 'new'
@@ -97,13 +106,11 @@ describe('updateLeadStatus', () => {
       .returning()
       .execute();
 
-    const leadId = createResult[0].id;
+    const leadId = createdLead[0].id;
+    const validStatuses = ['new', 'contacted', 'qualified', 'converted', 'closed'] as const;
 
-    // Test updating to each valid status
-    const statuses: Array<'new' | 'contacted' | 'qualified' | 'converted' | 'closed'> = 
-      ['contacted', 'qualified', 'converted', 'closed'];
-
-    for (const status of statuses) {
+    // Test each status transition
+    for (const status of validStatuses) {
       const updateInput: UpdateLeadStatusInput = {
         id: leadId,
         status: status
@@ -114,12 +121,31 @@ describe('updateLeadStatus', () => {
     }
   });
 
-  it('should throw error for non-existent lead', async () => {
+  it('should update timestamp correctly', async () => {
+    // Create a test lead
+    const createdLead = await db.insert(leadsTable)
+      .values({
+        ...testLeadInput,
+        status: 'new'
+      })
+      .returning()
+      .execute();
+
+    const leadId = createdLead[0].id;
+    const originalTimestamp = createdLead[0].updated_at;
+
+    // Wait to ensure timestamp difference
+    await new Promise(resolve => setTimeout(resolve, 10));
+
     const updateInput: UpdateLeadStatusInput = {
-      id: 99999, // Non-existent ID
+      id: leadId,
       status: 'contacted'
     };
 
-    expect(updateLeadStatus(updateInput)).rejects.toThrow(/not found/i);
+    const result = await updateLeadStatus(updateInput);
+
+    expect(result.updated_at).toBeInstanceOf(Date);
+    expect(result.updated_at.getTime()).toBeGreaterThan(originalTimestamp.getTime());
+    expect(result.created_at).toEqual(createdLead[0].created_at);
   });
 });
